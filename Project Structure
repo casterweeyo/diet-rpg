@@ -1,0 +1,67 @@
+DietRPG/
+├── public/                     # 靜態資源 (PWA 相關檔案放這裡)
+│   ├── favicon.ico
+│   ├── pwa-192x192.png         # PWA 圖示 (小)
+│   ├── pwa-512x512.png         # PWA 圖示 (大)
+│   └── manifest.webmanifest    # PWA 設定檔 (名稱、顏色、圖示路徑)
+│
+├── src/                        # 原始碼核心目錄
+│   ├── assets/                 # 靜態資源 (圖片、全域 CSS)
+│   │   ├── images/             # 存放等級勳章、遊戲素材
+│   │   └── main.css            # Tailwind 引入與全域樣式
+│   │
+│   ├── components/             # 可重複使用的 Vue 元件
+│   │   ├── Game/               # 遊戲化相關元件
+│   │   │   ├── LevelBadge.vue  # 等級徽章顯示
+│   │   │   ├── XPBar.vue       # 經驗值進度條
+│   │   │   └── QuestCard.vue   # 每日任務卡片
+│   │   │
+│   │   ├── Diet/               # 飲食紀錄相關元件
+│   │   │   ├── CameraInput.vue # 相機/上傳按鈕 (核心功能)
+│   │   │   ├── FoodCard.vue    # 單筆食物顯示卡 (含熱量/照片)
+│   │   │   └── NutritionChart.vue # 營養素圓餅圖
+│   │   │
+│   │   └── /                 # 通用 UI 元件 (基於 DaisyUI/Tailwind)
+│   │       ├── NavBar.vue      # 底部導航列
+│   │       ├── AppHeader.vue   # 頂部標題與通知
+│   │       └── BaseModal.vue   # 通用彈窗 (確認 AI 結果用)
+│   │
+│   ├── composables/            # 組合式函數 (共用邏輯)
+│   │   ├── useTDEE.js          # 計算 TDEE 與營養目標的邏輯
+│   │   └── useLevelSystem.js   # 處理經驗值與升級邏輯
+│   │
+│   ├── layouts/                # 頁面佈局
+│   │   └── DefaultLayout.vue   # APP 主要框架 (含 Header + 內容區 + BottomNav)
+│   │
+│   ├── services/               # 外部服務串接層
+│   │   ├── gemini.js           # Google Gemini AI 呼叫邏輯 (Prompt 在這)
+│   │   ├── googleSheet.js      # (選用) Google Apps Script 串接邏輯
+│   │   └── notification.js     # 瀏覽器通知 API 封裝
+│   │
+│   ├── stores/                 # Pinia 狀態管理 (資料庫概念)
+│   │   ├── userStore.js        # 使用者資料 (Key, 身高體重, 等級, 設定)
+│   │   └── diaryStore.js       # 飲食紀錄 (每天吃的東西, 歷史資料)
+│   │
+│   ├── utils/                  # 工具函式庫
+│   │   ├── dateFormatter.js    # 日期格式化
+│   │   └── imageResizer.js     # 圖片壓縮 (上傳前先壓小以省流量)
+│   │
+│   ├── views/                  # 頁面 (Router 指向的地方)
+│   │   ├── HomeDashboard.vue   # 首頁 (儀表板)
+│   │   ├── ScanPage.vue        # 掃描/拍照頁
+│   │   ├── HistoryPage.vue     # 歷史紀錄頁
+│   │   ├── ProfileSettings.vue # 設定頁 (輸入 API Key)
+│   │   └── Onboarding.vue      # 首次進入的歡迎流程
+│   │
+│   ├── router/                 # 路由設定
+│   │   └── index.js
+│   │
+│   ├── App.vue                 # 根元件
+│   └── main.js                 # 進入點 (安裝 Pinia, Router, PWA)
+│
+├── .env                        # 環境變數 (通常放非機密設定)
+├── index.html                  # 入口 HTML
+├── package.json                # 依賴套件清單
+├── tailwind.config.js          # Tailwind 設定 (顏色主題配置)
+├── vite.config.js              # Vite 設定 (PWA Plugin 設定在這)
+└── jsconfig.json               # (可選) 讓 VS Code 懂你的路徑別名 (@/)

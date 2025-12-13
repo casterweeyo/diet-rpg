@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 這裡可以放一些全域樣式 */
+@layer base {
+  body {
+    @apply text-white bg-gray-900;
+  }
+
+  /* 讓 PWA 在手機上滑動更順暢 */
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+}

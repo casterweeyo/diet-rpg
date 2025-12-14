@@ -5,6 +5,7 @@ import { useUserStore } from '../stores/userStore'
 import { useDiaryStore } from '../stores/diaryStore'
 import LevelUpModal from '../components/UI/LevelUpModal.vue'
 import WeightChart from '../components/UI/WeightChart.vue'
+import CalorieChart from '../components/UI/CalorieChart.vue'
 
 const diaryStore = useDiaryStore()
 
@@ -72,6 +73,12 @@ const formatDate = (timestamp) => {
     hour: '2-digit',
     minute: '2-digit'
   })
+}
+
+// 翻譯用餐時段
+const translateMealType = (type) => {
+  const map = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '宵夜' }
+  return map[type] || '點心'
 }
 
 const handleDeleteLog = (id) => {
@@ -252,6 +259,12 @@ const handleDeleteLog = (id) => {
         </div>
       </section>
       
+      <!-- 熱量攝取趨勢圖 -->
+      <section class="p-6 bg-gray-800 border border-gray-700 shadow-xl rounded-2xl">
+        <h3 class="mb-4 text-sm font-bold tracking-widest text-gray-400 uppercase">熱量攝取趨勢 (Calories)</h3>
+        <CalorieChart />
+      </section>
+
       <!-- 紀錄列表 (補上遺漏的部分) -->
       <section>
         <div v-if="diaryStore.recentLogs.length === 0" class="flex flex-col items-center justify-center py-10 text-gray-500">
@@ -271,7 +284,10 @@ const handleDeleteLog = (id) => {
             <div class="flex items-start justify-between mb-1">
               <div>
                 <h3 class="font-bold text-white">{{ log.food_name }}</h3>
-                <span class="text-xs text-gray-400">{{ formatDate(log.timestamp) }}</span>
+                <div class="flex items-center gap-2 mt-1">
+                  <span v-if="log.mealType" class="px-1.5 py-0.5 text-[10px] font-bold text-gray-900 bg-gray-400 rounded">{{ translateMealType(log.mealType) }}</span>
+                  <span class="text-xs text-gray-400">{{ formatDate(log.timestamp) }}</span>
+                </div>
               </div>
               <div class="mr-6 text-right">
                 <span class="text-xl font-black text-green-400">{{ log.calories }}</span>

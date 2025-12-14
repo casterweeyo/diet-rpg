@@ -25,6 +25,16 @@ const textInput = ref('')
 const barcodeInput = ref('')
 const showBarcodeScanner = ref(false)
 
+// 用餐時段 (根據目前時間自動預選)
+const getMealTypeByTime = () => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 11) return 'breakfast'
+  if (hour >= 11 && hour < 17) return 'lunch'
+  if (hour >= 17 && hour < 22) return 'dinner'
+  return 'snack'
+}
+const mealType = ref(getMealTypeByTime())
+
 // 處理圖片選擇
 const handleImageSelected = (file) => {
   currentFile.value = file
@@ -85,8 +95,16 @@ const handleBarcodeScanned = (scannedCode) => {
 const confirmLog = () => {
   if (!scanResult.value) return
 
+  if (!mealType.value) {
+    alert('請選擇用餐時段')
+    return
+  }
+
   // 1. 寫入日記資料庫
-  diaryStore.addLog(scanResult.value)
+  diaryStore.addLog({
+    ...scanResult.value,
+    mealType: mealType.value // 加入用餐時段
+  })
   
   // 2. 觸發任務完成 (紀錄第一餐)
   userStore.completeQuest('scan')
@@ -180,6 +198,17 @@ const confirmLog = () => {
           <span class="px-3 py-1 text-xs font-bold text-yellow-300 border rounded-full bg-yellow-500/20 border-yellow-500/30">
             +20 XP
           </span>
+        </div>
+
+        <!-- 用餐時段選擇 -->
+        <div class="p-4 border-b border-gray-700 bg-gray-700/30">
+          <label class="block mb-2 text-xs font-bold text-gray-400 uppercase">用餐時段 <span class="text-red-500">*</span></label>
+          <select v-model="mealType" class="w-full text-base bg-gray-900 select select-bordered">
+            <option value="breakfast">早餐</option>
+            <option value="lunch">午餐</option>
+            <option value="dinner">晚餐</option>
+            <option value="snack">宵夜</option>
+          </select>
         </div>
 
         <div class="grid grid-cols-2 gap-4 p-6">

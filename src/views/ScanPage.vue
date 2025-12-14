@@ -100,15 +100,20 @@ const confirmLog = () => {
 </script>
 
 <template>
-  <div class="min-h-screen p-4 pb-20 bg-gray-900 max-w-xl mx-auto">
+  <div class="max-w-xl min-h-screen p-4 pb-20 mx-auto bg-gray-900">
     
     <BarcodeScanner v-if="showBarcodeScanner" @close="showBarcodeScanner = false" @scanned="handleBarcodeScanned" />
 
-    <header class="mb-6">
-      <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
-        飲食掃描儀
-      </h1>
-      <p class="text-sm text-gray-400">拍下食物，讓 AI 幫你計算熱量</p>
+    <header class="flex items-start justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+          飲食掃描儀
+        </h1>
+        <p class="text-sm text-gray-400">拍下食物，讓 AI 幫你計算熱量</p>
+      </div>
+      <button @click="router.push('/')" class="btn btn-circle btn-ghost btn-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
     </header>
 
     <!-- 分頁切換 -->

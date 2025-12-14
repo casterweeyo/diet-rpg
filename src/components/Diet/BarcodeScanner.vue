@@ -11,8 +11,13 @@ const error = ref('')
 onMounted(() => {
   if (!scannerRef.value) return
 
-  html5Qrcode = new Html5Qrcode(scannerRef.value.id)
-  const config = { fps: 10, qrbox: { width: 280, height: 150 } }
+  // 啟用實驗性功能：使用瀏覽器原生的 BarcodeDetector (速度更快、更準)
+  html5Qrcode = new Html5Qrcode(scannerRef.value.id, { 
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true } 
+  })
+  
+  // 調整掃描框為扁長形，更適合掃描國際條碼 (EAN/UPC)
+  const config = { fps: 10, qrbox: { width: 300, height: 150 } }
 
   const onScanSuccess = (decodedText, decodedResult) => {
     // 停止掃描並發送結果
@@ -54,7 +59,7 @@ onUnmounted(() => {
     </button>
     
     <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <div class="w-[280px] h-[150px] border-4 border-dashed border-green-500 rounded-lg opacity-50 shadow-lg"></div>
+      <div class="w-[300px] h-[150px] border-4 border-dashed border-green-500 rounded-lg opacity-50 shadow-lg"></div>
     </div>
   </div>
 </template>

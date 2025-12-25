@@ -1,10 +1,9 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
 import { analyzeImage, analyzeText } from '../services/gemini'
 import { fetchProductByBarcode } from '../services/barcode'
-import CameraInput from '../components/Diet/CameraInput.vue'
 import BarcodeScanner from '../components/Diet/BarcodeScanner.vue'
 import { useDiaryStore } from '../stores/diaryStore'
 
@@ -19,11 +18,13 @@ const isAnalyzing = ref(false)
 const errorMsg = ref('')
 const scanResult = ref(null) // 存放 AI 回傳的 JSON
 const previewUrl = ref(null) // 圖片預覽連結
+const addToCustom = ref(false) // 是否加入常用飲食
 
 // 文字與條碼輸入
 const textInput = ref('')
 const barcodeInput = ref('')
 const showBarcodeScanner = ref(false)
+const fileInputRef = ref(null)
 
 // 用餐時段 (根據目前時間自動預選)
 const getMealTypeByTime = () => {
@@ -35,15 +36,39 @@ const getMealTypeByTime = () => {
 }
 const mealType = ref(getMealTypeByTime())
 
-// 處理圖片選擇
-const handleImageSelected = (file) => {
-  currentFile.value = file
-  scanResult.value = null // 重選圖片時清空舊結果
-  errorMsg.value = ''
+// 取得當前活躍任務
+const activeQuest = computed(() => {
+  return userStore.game.dailyQuests.items.find(q => !q.completed) || userStore.game.dailyQuests.items[0]
+})
+
+// 觸發相機/檔案選擇
+const triggerCamera = () => {
+  if (scanResult.value) {
+    // 如果已有結果，視為重置
+    scanResult.value = null
+    previewUrl.value = null
+    currentFile.value = null
+    return
+  }
   
-  // 產生預覽圖
-  if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-  previewUrl.value = URL.createObjectURL(file)
+  if (previewUrl.value && !isAnalyzing.value) {
+    // 如果已有圖片但未分析，開始分析
+    startAnalysis()
+    return
+  }
+
+  fileInputRef.value.click()
+}
+
+const handleFileChange = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    currentFile.value = file
+    scanResult.value = null
+    errorMsg.value = ''
+    if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
+    previewUrl.value = URL.createObjectURL(file)
+  }
 }
 
 // 執行分析 (統一入口)
@@ -112,170 +137,285 @@ const confirmLog = () => {
   // 額外獎勵：每次紀錄都給一點基礎 XP (例如 10)，鼓勵多紀錄
   userStore.addXP(10)
   
+  // 4. 如果勾選加入常用飲食
+  if (addToCustom.value) {
+    if (!userStore.settings.quickAddItems) userStore.settings.quickAddItems = []
+    userStore.settings.quickAddItems.push({
+      name: scanResult.value.food_name,
+      calories: scanResult.value.calories,
+      protein: scanResult.value.protein,
+      carbs: scanResult.value.carbs,
+      fat: scanResult.value.fat,
+      icon: 'restaurant'
+    })
+  }
+
   // 3. 顯示成功並跳轉
   router.push('/')
+}
+
+const quickAddFood = (name, calories, protein, carbs, fat) => {
+  diaryStore.addLog({
+    food_name: name,
+    calories,
+    protein,
+    carbs,
+    fat,
+    mealType: getMealTypeByTime(),
+    timestamp: Date.now()
+  })
+  userStore.addXP(5)
+  alert(`已新增 ${name}`)
+}
+
+const quickAddWater = () => {
+    userStore.addWater(250)
+    alert('已新增 250ml 水分')
 }
 </script>
 
 <template>
-  <div class="max-w-xl min-h-screen p-4 pb-20 mx-auto bg-gray-900">
+  <div class="flex flex-col min-h-screen overflow-hidden text-white bg-[#102216] font-sans selection:bg-[#13ec5b] selection:text-black max-w-xl mx-auto">
     
     <BarcodeScanner v-if="showBarcodeScanner" @close="showBarcodeScanner = false" @scanned="handleBarcodeScanned" />
 
-    <header class="flex items-start justify-between mb-6">
-      <div>
-        <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
-          飲食掃描儀
-        </h1>
-        <p class="text-sm text-gray-400">拍下食物，讓 AI 幫你計算熱量</p>
-      </div>
-      <button @click="router.push('/')" class="btn btn-circle btn-ghost btn-sm">
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    <!-- Hidden File Input -->
+    <input 
+      type="file" 
+      ref="fileInputRef"
+      accept="image/*" 
+      capture="environment"
+      class="hidden"
+      @change="handleFileChange"
+    />
+
+    <!-- Top App Bar -->
+    <header class="sticky top-0 z-20 flex items-center justify-between p-4 backdrop-blur-md bg-[#102216]/90">
+      <button @click="router.push('/')" class="flex items-center justify-center transition-colors rounded-full size-10 hover:bg-white/10">
+        <span class="text-2xl material-symbols-outlined">arrow_back</span>
+      </button>
+      <h2 class="text-lg font-bold tracking-tight uppercase">食物掃描器</h2>
+      <button class="relative flex items-center justify-center transition-colors rounded-full size-10 hover:bg-white/10">
+        <span class="text-2xl material-symbols-outlined">backpack</span>
+        <div class="absolute top-2 right-2 size-2 bg-[#13ec5b] rounded-full shadow-[0_0_15px_rgba(19,236,91,0.4)]"></div>
       </button>
     </header>
 
-    <!-- 分頁切換 -->
-    <div role="tablist" class="p-1 mb-6 bg-gray-800 tabs tabs-boxed">
-      <a role="tab" class="transition-all tab" :class="{ 'tab-active bg-green-600 text-white': mode === 'camera' }" @click="mode = 'camera'; scanResult = null">📸 拍照</a>
-      <a role="tab" class="transition-all tab" :class="{ 'tab-active bg-blue-600 text-white': mode === 'text' }" @click="mode = 'text'; scanResult = null">📝 文字</a>
-      <a role="tab" class="transition-all tab" :class="{ 'tab-active bg-purple-600 text-white': mode === 'barcode' }" @click="mode = 'barcode'; scanResult = null">║▌ 條碼</a>
-    </div>
 
-    <!-- 1. 拍照模式 -->
-    <div v-if="mode === 'camera' && !scanResult">
-      <CameraInput @image-selected="handleImageSelected" />
+    <!-- Main Content Area -->
+    <main class="relative flex flex-col flex-1 w-full h-full max-w-md mx-auto overflow-hidden">
       
-      <!-- 圖片預覽 -->
-      <div v-if="previewUrl" class="relative mt-4 overflow-hidden border border-gray-700 shadow-lg rounded-xl">
-        <img :src="previewUrl" class="object-cover w-full h-64" alt="Food Preview" />
-      </div>
-
-      <div v-if="currentFile" class="mt-6">
-        <button @click="startAnalysis" :disabled="isAnalyzing" class="btn-action bg-gradient-to-r from-green-500 to-blue-600">
-          <span v-if="isAnalyzing" class="loading loading-spinner loading-sm"></span> {{ isAnalyzing ? 'AI 分析中...' : '開始分析圖片' }}
-        </button>
-      </div>
-    </div>
-
-    <!-- 2. 文字模式 -->
-    <div v-if="mode === 'text' && !scanResult" class="space-y-4">
-      <textarea 
-        v-model="textInput"
-        class="w-full h-40 text-lg bg-gray-800 textarea textarea-bordered" 
-        placeholder="例如：一個大麥克漢堡配中薯，還有一杯可樂..."
-      ></textarea>
-      <button @click="startAnalysis" :disabled="!textInput || isAnalyzing" class="btn-action bg-gradient-to-r from-blue-500 to-purple-600">
-        <span v-if="isAnalyzing" class="loading loading-spinner loading-sm"></span> {{ isAnalyzing ? 'AI 估算中...' : '送出文字分析' }}
-      </button>
-    </div>
-
-    <!-- 3. 條碼模式 -->
-    <div v-if="mode === 'barcode' && !scanResult" class="space-y-4">
-      <div class="form-control">
-        <label class="label"><span class="text-gray-400 label-text">輸入國際條碼 (EAN/UPC)</span></label>
-        <div class="flex gap-2">
-          <input v-model="barcodeInput" type="number" placeholder="例如: 4710018183204" class="flex-1 bg-gray-800 input input-bordered" />
-          <button @click="scanBarcodeWithCamera" class="border-gray-600 btn btn-square btn-outline">
-            📷
+      <!-- Tab Mode Switcher -->
+      <div class="z-10 px-4 mb-4">
+        <div class="flex items-center justify-center w-full h-12 p-1 border rounded-full bg-[#1c2e22] border-white/10">
+          <button @click="mode = 'camera'; scanResult = null" class="flex items-center justify-center flex-1 h-full text-sm font-bold transition-all duration-300 rounded-full" :class="mode === 'camera' ? 'bg-[#13ec5b] text-[#102216] shadow-[0_0_15px_rgba(19,236,91,0.4)]' : 'text-gray-400 hover:bg-white/5'">
+            <span class="material-symbols-outlined text-[18px] mr-1.5">photo_camera</span>
+            <span>AI Scan</span>
+          </button>
+          <button @click="mode = 'text'; scanResult = null" class="flex items-center justify-center flex-1 h-full text-sm font-bold transition-all duration-300 rounded-full" :class="mode === 'text' ? 'bg-[#13ec5b] text-[#102216] shadow-[0_0_15px_rgba(19,236,91,0.4)]' : 'text-gray-400 hover:bg-white/5'">
+            <span class="material-symbols-outlined text-[18px] mr-1.5">edit_note</span>
+            <span>AI 文字輸入</span>
+          </button>
+          <button @click="mode = 'barcode'; scanResult = null" class="flex items-center justify-center flex-1 h-full text-sm font-bold transition-all duration-300 rounded-full" :class="mode === 'barcode' ? 'bg-[#13ec5b] text-[#102216] shadow-[0_0_15px_rgba(19,236,91,0.4)]' : 'text-gray-400 hover:bg-white/5'">
+            <span class="material-symbols-outlined text-[18px] mr-1.5">qr_code_scanner</span>
+            <span>條碼</span>
           </button>
         </div>
       </div>
-      <button @click="startAnalysis" :disabled="!barcodeInput || isAnalyzing" class="btn-action bg-gradient-to-r from-purple-500 to-pink-600">
-        <span v-if="isAnalyzing" class="loading loading-spinner loading-sm"></span> {{ isAnalyzing ? '查詢資料庫...' : '查詢條碼' }}
-      </button>
-      <p class="mt-4 text-xs text-center text-gray-500">資料來源: OpenFoodFacts</p>
-    </div>
 
-    <div v-if="errorMsg" class="p-4 mt-4 text-sm text-red-200 border border-red-500 bg-red-900/50 rounded-xl">
-      ⚠️ {{ errorMsg }}
-    </div>
-
-    <div v-if="scanResult" class="mt-6 animate-fade-in-up">
-      <div class="overflow-hidden bg-gray-800 border border-gray-700 shadow-2xl rounded-xl">
+      <!-- Viewfinder / Content -->
+      <div class="relative flex-1 mx-4 overflow-hidden border shadow-2xl bg-black/80 rounded-2xl border-white/10 group">
         
-        <div class="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-700/50">
-          <h2 class="text-xl font-bold text-white">{{ scanResult.food_name }}</h2>
-          <span class="px-3 py-1 text-xs font-bold text-yellow-300 border rounded-full bg-yellow-500/20 border-yellow-500/30">
-            +20 XP
-          </span>
+        <!-- Result Overlay (If analyzed) -->
+        <div v-if="scanResult" class="absolute inset-0 z-30 overflow-y-auto bg-[#102216]/95 backdrop-blur-sm">
+           <!-- Result Card Content -->
+           <div class="p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-bold text-white">{{ scanResult.food_name }}</h2>
+                <span class="px-3 py-1 text-xs font-bold text-[#102216] bg-[#13ec5b] rounded-full">+20 XP</span>
+              </div>
+              <!-- 用餐時段 Select -->
+              <div class="mb-6">
+                 <label class="block mb-2 text-xs font-bold text-gray-400 uppercase">用餐時段</label>
+                 <select v-model="mealType" class="w-full p-3 text-white bg-[#1c2e22] border border-white/10 rounded-lg outline-none focus:border-[#13ec5b]">
+                    <option value="breakfast">早餐</option>
+                    <option value="lunch">午餐</option>
+                    <option value="dinner">晚餐</option>
+                    <option value="snack">宵夜</option>
+                 </select>
+              </div>
+              <!-- Stats -->
+              <div class="grid grid-cols-2 gap-4 mb-6">
+                 <div class="col-span-2 p-4 text-center border rounded-xl bg-[#1c2e22] border-white/10">
+                    <span class="block text-xs tracking-wider text-gray-400 uppercase">熱量</span>
+                    <span class="text-4xl font-black text-[#13ec5b]">{{ userStore.settings?.roundUpCalories ? Math.ceil(scanResult.calories) : scanResult.calories }}</span>
+                    <span class="ml-1 text-sm text-gray-500">kcal</span>
+                 </div>
+                 <div class="p-3 text-center rounded-xl bg-[#1c2e22]/50">
+                    <span class="block text-xs text-gray-500">蛋白質</span>
+                    <span class="text-xl font-bold text-blue-400">{{ scanResult.protein }}g</span>
+                 </div>
+                 <div class="p-3 text-center rounded-xl bg-[#1c2e22]/50">
+                    <span class="block text-xs text-gray-500">碳水</span>
+                    <span class="text-xl font-bold text-orange-400">{{ scanResult.carbs }}g</span>
+                 </div>
+                 <div class="col-span-2 p-3 text-center rounded-xl bg-[#1c2e22]/50">
+                    <span class="block text-xs text-gray-500">脂肪</span>
+                    <span class="text-xl font-bold text-red-400">{{ scanResult.fat }}g</span>
+                 </div>
+              </div>
+              
+              <!-- Add to Custom Checkbox -->
+              <div class="mb-4 form-control">
+                <label class="justify-start gap-3 cursor-pointer label">
+                  <input type="checkbox" v-model="addToCustom" class="checkbox checkbox-primary checkbox-sm" />
+                  <span class="text-sm text-gray-300 label-text">同時加入「自訂常用飲食」清單</span>
+                </label>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex gap-3">
+                 <button @click="scanResult = null" class="flex-1 py-3 font-bold text-gray-400 border border-gray-600 rounded-xl hover:bg-white/5">取消</button>
+                 <button @click="confirmLog" class="flex-[2] py-3 font-bold text-[#102216] bg-[#13ec5b] rounded-xl shadow-[0_0_15px_rgba(19,236,91,0.4)] hover:bg-[#13ec5b]/90">送出紀錄</button>
+              </div>
+           </div>
         </div>
 
-        <!-- 用餐時段選擇 -->
-        <div class="p-4 border-b border-gray-700 bg-gray-700/30">
-          <label class="block mb-2 text-xs font-bold text-gray-400 uppercase">用餐時段 <span class="text-red-500">*</span></label>
-          <select v-model="mealType" class="w-full text-base bg-gray-900 select select-bordered">
-            <option value="breakfast">早餐</option>
-            <option value="lunch">午餐</option>
-            <option value="dinner">晚餐</option>
-            <option value="snack">宵夜</option>
-          </select>
+        <!-- Camera Mode View -->
+        <div v-if="mode === 'camera'" class="w-full h-full">
+           <img v-if="previewUrl" :src="previewUrl" class="object-cover w-full h-full opacity-80" />
+           <div v-else class="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60"></div>
+           
+           <!-- HUD Overlay -->
+           <div class="absolute inset-0 flex flex-col items-center justify-center p-6 pointer-events-none">
+              <!-- Corners -->
+              <div class="absolute top-6 left-6 w-8 h-8 border-t-4 border-l-4 border-[#13ec5b] rounded-tl-lg shadow-[0_0_10px_rgba(19,236,91,0.5)]"></div>
+              <div class="absolute top-6 right-6 w-8 h-8 border-t-4 border-r-4 border-[#13ec5b] rounded-tr-lg shadow-[0_0_10px_rgba(19,236,91,0.5)]"></div>
+              <div class="absolute bottom-6 left-6 w-8 h-8 border-b-4 border-l-4 border-[#13ec5b] rounded-bl-lg shadow-[0_0_10px_rgba(19,236,91,0.5)]"></div>
+              <div class="absolute bottom-6 right-6 w-8 h-8 border-b-4 border-r-4 border-[#13ec5b] rounded-br-lg shadow-[0_0_10px_rgba(19,236,91,0.5)]"></div>
+              
+              <!-- Reticle -->
+              <div v-if="!previewUrl" class="relative flex items-center justify-center w-48 h-48 border rounded-lg border-[#13ec5b]/30">
+                 <div class="w-full h-[1px] bg-[#13ec5b]/50 absolute top-1/2 left-0 transform -translate-y-1/2 scan-line shadow-[0_0_8px_rgba(19,236,91,0.8)]"></div>
+                 <div class="absolute -top-3 text-[#13ec5b]/80 text-[10px] font-mono tracking-widest bg-black/50 px-2 rounded">拍攝食物或包裝營養成分</div>
+                 <span class="material-symbols-outlined text-[#13ec5b]/50 text-4xl animate-pulse">center_focus_weak</span>
+              </div>
+
+              <!-- Info -->
+              <div v-if="!previewUrl" class="absolute flex flex-col items-center gap-1 bottom-10">
+
+                 <p class="text-[#13ec5b]/80 text-xs font-mono bg-black/40 px-2 py-1 rounded border border-[#13ec5b]/20">AI READY</p>
+              </div>
+           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 p-6">
-          <div class="col-span-2 p-4 text-center border border-gray-600 rounded-lg bg-gray-900/50">
-            <span class="block text-xs tracking-wider text-gray-400 uppercase">熱量 (Calories)</span>
-            <span class="text-3xl font-black text-green-400">{{ scanResult.calories }}</span>
-            <span class="ml-1 text-sm text-gray-500">kcal</span>
-          </div>
-
-          <div class="p-3 text-center rounded-lg bg-gray-900/30">
-            <span class="block text-xs text-gray-500">蛋白質</span>
-            <span class="text-lg font-bold text-blue-400">{{ scanResult.protein }}g</span>
-          </div>
-          
-          <div class="p-3 text-center rounded-lg bg-gray-900/30">
-            <span class="block text-xs text-gray-500">碳水</span>
-            <span class="text-lg font-bold text-orange-400">{{ scanResult.carbs }}g</span>
-          </div>
-          
-          <div class="col-span-2 p-3 text-center rounded-lg bg-gray-900/30">
-            <span class="block text-xs text-gray-500">脂肪</span>
-            <span class="text-lg font-bold text-red-400">{{ scanResult.fat }}g</span>
-          </div>
+        <!-- Text Mode View -->
+        <div v-if="mode === 'text'" class="flex flex-col w-full h-full p-6">
+           <textarea v-model="textInput" class="flex-1 w-full p-4 text-lg text-white bg-transparent border-none outline-none resize-none placeholder-white/30" placeholder="請敘述你的食物..例如：一個全家的烤雞三明治+光泉無糖豆漿"></textarea>
+           <div class="flex justify-end">
+              <span class="text-xs text-[#13ec5b]/70 font-mono">{{ textInput.length }}個字</span>
+           </div>
         </div>
 
-        <div class="px-6 pb-6">
-          <div class="flex gap-3 p-3 border rounded-lg bg-blue-900/20 border-blue-500/30">
-            <span class="text-xl">💡</span>
-            <p class="text-sm italic text-blue-200">
-              "{{ scanResult.advice }}"
-            </p>
-          </div>
-        </div>
-
-        <div class="flex gap-3 p-4 bg-gray-900">
-          <button @click="scanResult = null" class="flex-1 py-3 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800">
-            放棄
-          </button>
-          <button @click="confirmLog" class="w-2/3 py-3 font-bold text-white bg-green-600 rounded-lg shadow-lg flex-2 hover:bg-green-500">
-            確認並獲得 XP
-          </button>
+        <!-- Barcode Mode View -->
+        <div v-if="mode === 'barcode'" class="flex flex-col items-center justify-center w-full h-full gap-4 p-6">
+           <div class="w-full max-w-xs">
+              <div class="flex">
+                 <input v-model="barcodeInput" type="number" class="w-full p-3 text-center text-white bg-[#1c2e22] border border-white/10 rounded-xl outline-none focus:border-[#13ec5b]" placeholder="輸入條碼"/>
+              </div>
+           </div>
+           <button @click="scanBarcodeWithCamera" class="flex items-center gap-2 px-4 py-2 text-sm font-bold text-[#13ec5b] border border-[#13ec5b]/30 rounded-lg hover:bg-[#13ec5b]/10">
+              <span class="material-symbols-outlined">qr_code_scanner</span>開啟相機掃描
+           </button>
         </div>
 
       </div>
+
+      <!-- Camera Controls -->
+      <div class="flex flex-col items-center justify-center px-4 pt-6 pb-2 bg-[#102216]">
+         <div class="flex items-center justify-center w-full gap-8">
+            <!-- Gallery Button -->
+            <button @click="fileInputRef.click()" class="flex flex-col items-center gap-1 group">
+               <div class="flex items-center justify-center text-white transition-all border shadow-lg size-12 rounded-full bg-[#1c2e22] border-white/10 group-hover:bg-white/10">
+                  <span class="text-xl material-symbols-outlined">photo_library</span>
+               </div>
+            </button>
+
+            <!-- Main Trigger Button -->
+            <button @click="mode === 'text' || mode === 'barcode' ? startAnalysis() : triggerCamera()" :disabled="isAnalyzing" class="relative flex items-center justify-center transition-transform duration-100 bg-transparent rounded-full size-20 group active:scale-95">
+               <div class="absolute inset-0 transition-colors border-2 rounded-full border-[#13ec5b]/30 group-hover:border-[#13ec5b]/60"></div>
+               <div class="absolute inset-1 border rounded-full border-[#13ec5b]/20"></div>
+               <div class="size-16 rounded-full bg-[#13ec5b] flex items-center justify-center shadow-[0_0_25px_rgba(19,236,91,0.6)] z-10">
+                  <span v-if="isAnalyzing" class="loading loading-spinner text-[#102216]"></span>
+                  <span v-else-if="previewUrl || mode === 'text' || mode === 'barcode'" class="text-3xl material-symbols-outlined text-[#102216]">bolt</span>
+                  <span v-else class="text-4xl material-symbols-outlined text-[#102216]">search</span>
+               </div>
+            </button>
+
+            <!-- Flash/Reset Button -->
+            <button @click="previewUrl = null; scanResult = null; textInput = ''; barcodeInput = ''" class="flex flex-col items-center gap-1 group">
+               <div class="flex items-center justify-center text-white transition-all border shadow-lg size-12 rounded-full bg-[#1c2e22] border-white/10 group-hover:bg-white/10">
+                  <span class="text-xl material-symbols-outlined">refresh</span>
+               </div>
+            </button>
+         </div>
+      </div>
+    </main>
+
+    <!-- Quick Inventory (Bottom Sheet) -->
+    <div class="pt-4 pb-6 border-t bg-[#1c2e22] border-white/5">
+       <div class="flex items-center justify-between px-4 mb-3">
+          <h3 class="text-sm font-bold tracking-wide text-gray-300 uppercase">快速增加</h3>
+       </div>
+       <div class="flex gap-3 px-4 pb-2 overflow-x-auto no-scrollbar">
+          <!-- Dynamic Items from Settings -->
+          <button v-for="(item, index) in userStore.settings.quickAddItems" :key="index" @click="quickAddFood(item.name, item.calories, item.protein, item.carbs, item.fat)" class="flex flex-col items-center gap-2 min-w-[72px] group">
+             <div class="relative overflow-hidden transition-colors border size-14 rounded-xl bg-[#102216] border-white/10 group-hover:border-[#13ec5b]/50">
+                <div class="flex items-center justify-center w-full h-full bg-white/5">
+                   <span class="text-gray-500 material-symbols-outlined">{{ item.icon || 'fastfood' }}</span>
+                </div>
+                <div class="absolute bottom-0 right-0 px-1 text-[10px] font-bold text-[#102216] rounded-tl bg-[#13ec5b]">+</div>
+             </div>
+             <span class="text-[10px] font-medium text-gray-400 truncate w-full text-center">{{ item.name }}</span>
+          </button>
+          <!-- Water -->
+          <button @click="quickAddWater" class="flex flex-col items-center gap-2 min-w-[72px] group">
+             <div class="relative overflow-hidden transition-colors border size-14 rounded-xl bg-[#102216] border-white/10 group-hover:border-[#13ec5b]/50">
+                <div class="flex items-center justify-center w-full h-full bg-white/5">
+                   <span class="text-gray-500 material-symbols-outlined">water_drop</span>
+                </div>
+                <div class="absolute bottom-0 right-0 px-1 text-[10px] font-bold text-[#102216] rounded-tl bg-[#13ec5b]">+</div>
+             </div>
+             <span class="text-[10px] font-medium text-gray-400 truncate w-full text-center">飲水</span>
+          </button>
+          <!-- Custom -->
+          <button @click="router.push('/scan')" class="flex flex-col items-center gap-2 min-w-[72px] group">
+             <div class="flex items-center justify-center transition-all border border-dashed border-white/20 size-14 rounded-xl group-hover:border-[#13ec5b]/50 group-hover:bg-[#13ec5b]/10 text-gray-500 group-hover:text-[#13ec5b]">
+                <span class="material-symbols-outlined">add</span>
+             </div>
+             <span class="text-[10px] font-medium text-gray-500 truncate w-full text-center">自訂</span>
+          </button>
+       </div>
     </div>
 
   </div>
 </template>
 
 <style scoped>
-/* 簡單的進場動畫 */
-.animate-fade-in-up {
-  animation: fadeInUp 0.5s ease-out;
+@keyframes scan {
+    0% { top: 0%; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
 }
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.scan-line {
+    animation: scan 3s linear infinite;
 }
-
-.btn-action {
-  @apply flex items-center justify-center w-full gap-2 py-4 text-lg font-bold text-white transition-all shadow-lg rounded-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed;
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+.no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
 </style>

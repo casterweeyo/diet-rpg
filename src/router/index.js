@@ -1,9 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '../stores/userStore'
-import HomeDashboard from '../views/HomeDashboard.vue'
+import MainLayout from '../views/MainLayout.vue'
 import ScanPage from '../views/ScanPage.vue'
 import LoginSettings from '../views/LoginSettings.vue'
-import DiaryLog from '../views/DiaryLog.vue' 
+import CustomFoodSettings from '../views/CustomFoodSettings.vue'
+import ChangelogPage from '../views/ChangelogPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,7 +12,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: HomeDashboard
+      component: MainLayout
     },
     {
       path: '/scan',
@@ -23,11 +24,15 @@ const router = createRouter({
       name: 'settings',
       component: LoginSettings
     },
-    // 2. 加入這段設定
     {
-      path: '/log',
-      name: 'log',
-      component: DiaryLog
+      path: '/custom-food',
+      name: 'custom-food',
+      component: CustomFoodSettings
+    },
+    {
+      path: '/changelog',
+      name: 'changelog',
+      component: ChangelogPage
     }
   ]
 })

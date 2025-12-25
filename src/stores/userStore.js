@@ -9,19 +9,24 @@ export const useUserStore = defineStore('user', () => {
   // 使用者基本資料
   const profile = ref({
     name: '',           // 暱稱
+    avatar: null,       // 頭像 (Base64)
     gender: 'female',     // male | female
     age: 25,
     height: 160,        // cm
     weight: 50,         // kg
     activityLevel: 1.2, // 活動量係數 (1.2 ~ 1.9)
     goal: 'maintain',   // cut (減脂) | maintain (維持) | bulk (增肌)
+    proteinPerKg: 2.0,  // 蛋白質係數 (g/kg)
+    fatPerKg: 0.9,      // 脂肪係數 (g/kg)
+    customBmr: null,    // 自訂 BMR
   })
 
   // 系統設定
   const settings = ref({
     apiKey: '',         // Google Gemini API Key
     theme: 'dark',      // 主題色
-    notifications: true // 是否開啟通知
+    notifications: true,// 是否開啟通知
+    lastSeenVersion: '' // 使用者最後查看的版本號
   })
 
   // UI 狀態
@@ -54,6 +59,9 @@ export const useUserStore = defineStore('user', () => {
 
   // 基礎代謝率 (BMR) - 使用 Mifflin-St Jeor 公式
   const bmr = computed(() => {
+    if (profile.value.customBmr) {
+      return parseInt(profile.value.customBmr)
+    }
     // 公式: (10 × weight) + (6.25 × height) - (5 × age) + s
     // s: male +5, female -161
     const s = profile.value.gender === 'male' ? 5 : -161
@@ -78,12 +86,25 @@ export const useUserStore = defineStore('user', () => {
     if (profile.value.goal === 'cut') targetCalories -= 500  // 減脂建議 -500
     if (profile.value.goal === 'bulk') targetCalories += 300 // 增肌建議 +300
 
-    // 營養素分配 (簡單估算: 蛋白質優先)
-    // 減脂: 高蛋白 (40%), 中脂 (30%), 低碳 (30%)
-    // 增肌: 中高蛋白 (30%), 中脂 (20%), 高碳 (50%)
-    let macros = { p: 30, f: 30, c: 40 } // 預設比例 %
+    // 針對「減脂期」使用體重計算法
+    if (profile.value.goal === 'cut') {
+      // 蛋白質: 取 2g/kg (範圍 1.6-2.2g)
+      const protein = Math.round(profile.value.weight * (profile.value.proteinPerKg || 2.0))
+      // 脂肪: 取 0.9g/kg (範圍 0.8-1g)
+      const fat = Math.round(profile.value.weight * (profile.value.fatPerKg || 0.9))
+      
+      // 計算已佔用的熱量
+      const occupiedCals = (protein * 4) + (fat * 9)
+      // 剩餘熱量給碳水 (確保不為負數)
+      const carbs = Math.max(0, Math.round((targetCalories - occupiedCals) / 4))
 
-    if (profile.value.goal === 'cut') macros = { p: 40, f: 35, c: 25 }
+      return { calories: targetCalories, protein, fat, carbs }
+    }
+
+    // 其他模式 (維持/增肌) 使用比例分配法
+    // 維持: 均衡 (P30/F30/C40)
+    // 增肌: 高碳 (P30/F20/C50)
+    let macros = { p: 30, f: 30, c: 40 } // 預設比例 %
     if (profile.value.goal === 'bulk') macros = { p: 30, f: 20, c: 50 }
 
     return {
@@ -209,6 +230,52 @@ export const useUserStore = defineStore('user', () => {
     // 可以選擇是否要清空遊戲進度，這裡保留進度只清 Key
   }
 
+  // 重置所有資料 (危險操作)
+  function resetAllData() {
+    // 重置 Profile
+    profile.value = {
+      name: '',
+      avatar: null,
+      gender: 'female',
+      age: 25,
+      height: 160,
+      weight: 50,
+      activityLevel: 1.2,
+      goal: 'maintain',
+      proteinPerKg: 2.0,
+      fatPerKg: 0.9,
+      customBmr: null
+    }
+
+    // 重置 Settings
+    settings.value = {
+      apiKey: '',
+      theme: 'dark',
+      notifications: true,
+      lastSeenVersion: ''
+    }
+
+    // 重置 Game
+    game.value = {
+      level: 1,
+      currentXP: 0,
+      totalXP: 0,
+      streak: 0,
+      waterIntake: 0, // 水分歸零
+      lastLoginDate: null,
+      dailyQuests: {
+        date: '',
+        items: []
+      }
+    }
+
+    // 重置 Weight History
+    weightHistory.value = []
+    
+    // 重新初始化每日狀態 (這會設定今天的日期並初始化任務)
+    checkDailyReset()
+  }
+
   return {
     // State
     profile,
@@ -233,7 +300,8 @@ export const useUserStore = defineStore('user', () => {
     recordWeight,
     checkDailyReset,
     completeQuest,
-    logout
+    logout,
+    resetAllData
   }
 }, {
   persist: true // 開啟持久化 (資料自動存入 localStorage)

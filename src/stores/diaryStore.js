@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { logToGoogleSheet } from '../services/googleSheet'
+import { useUserStore } from './userStore'
 
 export const useDiaryStore = defineStore('diary', () => {
   // 1. State: 儲存所有的飲食紀錄
@@ -15,6 +17,20 @@ export const useDiaryStore = defineStore('diary', () => {
       ...scanResult
     }
     logs.value.push(newLog)
+
+    // 同步至 Google Sheet
+    const userStore = useUserStore()
+    // 請在此填入您的 Google Apps Script Web App URL
+    const CENTRAL_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwNCpfXsfem5-GwEWDwYl4OVa4BLMTRJmDVWR4xBNVKKv9ZxnF7wkpZDO5swo4uirV9vw/exec'
+
+    if (CENTRAL_SHEET_URL) {
+      logToGoogleSheet(
+        CENTRAL_SHEET_URL, 
+        userStore.profile, 
+        userStore.game, 
+        newLog
+      )
+    }
   }
 
   // 刪除紀錄

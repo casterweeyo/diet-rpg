@@ -25,6 +25,13 @@ ChartJS.register(
 
 const diaryStore = useDiaryStore()
 
+const props = defineProps({
+  period: {
+    type: String,
+    default: 'week' // 'week' | 'month'
+  }
+})
+
 const chartData = computed(() => {
   // 1. 將紀錄依照日期分組並加總熱量
   const logsByDate = {}
@@ -38,8 +45,9 @@ const chartData = computed(() => {
     logsByDate[log.date] += (log.calories || 0)
   })
 
-  // 2. 取出最近 7 天的資料 (如果資料少於 7 天則顯示全部)
-  const dates = Object.keys(logsByDate).slice(-7)
+  // 2. 根據 period 取出最近 N 天的資料
+  const days = props.period === 'month' ? 30 : 7
+  const dates = Object.keys(logsByDate).slice(-days)
   const calories = dates.map(date => logsByDate[date])
 
   return {

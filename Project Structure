@@ -20,7 +20,11 @@ DietRPG/
 │   │   └── UI/                 # 通用 UI 元件 (基於 DaisyUI/Tailwind)
 │   │       ├── Navbar.vue      # 底部導航列
 │   │       ├── CalorieChart.vue # 熱量趨勢圖表
-│   │       └── WeightChart.vue  # 體重趨勢圖表
+│   │       ├── WeightChart.vue  # 體重趨勢圖表
+│   │       └── UpdateModal.vue  # 版本更新通知視窗
+│   │
+│   ├── constants/              # 全域常數
+│   │   └── changelog.js        # 版本更新紀錄
 │   │
 │   ├── router/                 # 路由設定
 │   │   └── index.js            # 路由設定與導航守衛
@@ -36,6 +40,7 @@ DietRPG/
 │   │   └── diaryStore.js       # 飲食日記 CRUD 與統計
 │   │
 │   ├── views/                  # 頁面 (Router 指向的地方)
+│   │   ├── ChangelogPage.vue   # 版本更新歷史紀錄頁
 │   │   ├── Diary.vue           # 統計圖表 (熱量/體重) 與近期紀錄
 │   │   ├── CustomFoodSettings.vue # 自訂常用飲食設定頁
 │   │   ├── HomeDashboard.vue   # 儀表板 (狀態、熱量、營養素、水分、任務)

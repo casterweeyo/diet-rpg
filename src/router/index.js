@@ -42,6 +42,11 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
   
+  // 每次路由切換時，檢查是否跨日 (確保水分與任務重置)
+  if (userStore.isLoggedIn) {
+    userStore.checkDailyReset()
+  }
+  
   // 如果要去的地方不是設定頁，且使用者還沒登入 (沒 Key)
   if (to.name !== 'settings' && !userStore.isLoggedIn) {
     next({ name: 'settings' }) // 強制導向設定頁

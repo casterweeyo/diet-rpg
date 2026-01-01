@@ -1,4 +1,3 @@
-export const APP_VERSION = '1.1.0'
 export const APP_VERSION = '1.2.0'
 
 export const CHANGELOG = [
@@ -11,7 +10,9 @@ export const CHANGELOG = [
       '修正每日登入任務：確保重整後也能正確觸發',
       '調整遊戲平衡：升級經驗值曲線調整為 1.5 倍',
       '介面優化：調整文字輸入框高度與鍵盤遮擋問題',
-      '修正減脂模式熱量計算與資料儲存邏輯'
+      '修正減脂模式熱量計算與資料儲存邏輯',
+      '程式碼重構：抽離日期邏輯至 utils 資料夾',
+      '系統維護：修正檔案引用路徑'
     ]
   },
   {

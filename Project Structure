@@ -35,9 +35,13 @@ DietRPG/
 │   │   ├── googleSheet.js      # (選用) Google Apps Script 串接邏輯
 │   │   └── notification.js     # 瀏覽器通知 API 封裝
 │   │
-│   ├── stores/                 # Pinia 狀態管理 (資料庫概念)
-│   │   ├── userStore.js        # 使用者資料、TDEE/營養目標計算、遊戲進度
-│   │   └── diaryStore.js       # 飲食日記 CRUD 與統計
+│   ├── stores/             # 狀態管理 (Pinia)
+│   │   ├── userStore.js    # 使用者資料、設定、遊戲化邏輯
+│   │   ├── diaryStore.js   # 飲食紀錄邏輯
+│   │   ├── changelog.js    # 版本更新紀錄
+│   │
+│   ├── utils/                  # 通用工具函式
+│   │   ├── dateUtils.js        # 日期處理工具
 │   │
 │   ├── views/                  # 頁面 (Router 指向的地方)
 │   │   ├── ChangelogPage.vue   # 版本更新歷史紀錄頁
@@ -47,7 +51,7 @@ DietRPG/
 │   │   ├── LoginSettings.vue   # 初始設定 (API Key、個人數值、進位設定)
 │   │   ├── MainLayout.vue      # APP 主要框架 (含 Navbar + 內容區)
 │   │   ├── Quests.vue          # 飲食紀錄清單 (依餐別/日期)
-│   │   ├── ScanPage.vue        # 掃描/拍照頁
+│   │   ├── ScanPage.vue        # 掃描與紀錄頁面
 │   │   ├── Setting.vue         # 更多功能選單
 │   │
 │   ├── App.vue                 # 根元件

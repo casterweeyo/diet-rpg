@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { getTodayDate } from '../utils/dateUtils'
 
 export const useUserStore = defineStore('user', () => {
   // ==========================================
@@ -65,7 +66,7 @@ export const useUserStore = defineStore('user', () => {
     // 公式: (10 × weight) + (6.25 × height) - (5 × age) + s
     // s: male +5, female -161
     const s = profile.value.gender === 'male' ? 5 : -161
-    return (10 * profile.value.weight) + (6.25 * profile.value.height) - (5 * profile.value.age) + s
+    return Math.round((10 * profile.value.weight) + (6.25 * profile.value.height) - (5 * profile.value.age) + s)
   })
 
   // 每日總消耗熱量 (TDEE)
@@ -171,7 +172,7 @@ export const useUserStore = defineStore('user', () => {
   // 紀錄體重
   function recordWeight(kg) {
     profile.value.weight = parseFloat(kg)
-    const today = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const today = getTodayDate()
     
     // 檢查今天是否已經紀錄過，有則更新，無則新增
     const index = weightHistory.value.findIndex(h => h.date === today)
@@ -184,7 +185,7 @@ export const useUserStore = defineStore('user', () => {
 
   // 檢查並重置每日任務
   function checkDailyReset() {
-    const today = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const today = getTodayDate()
     
     // 如果日期不同，重置任務
     if (game.value.dailyQuests.date !== today) {

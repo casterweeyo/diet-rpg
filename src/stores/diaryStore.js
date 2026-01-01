@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { logToGoogleSheet } from '../services/googleSheet'
 import { useUserStore } from './userStore'
+import { getTodayDate } from '../utils/dateUtils'
 
 export const useDiaryStore = defineStore('diary', () => {
   // 1. State: 儲存所有的飲食紀錄
@@ -14,7 +15,7 @@ export const useDiaryStore = defineStore('diary', () => {
       ...scanResult, // 先展開傳入的資料，避免其中的 id 覆蓋掉系統生成的 id
       id: Date.now(),
       timestamp: Date.now(),
-      date: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0], // 儲存 YYYY-MM-DD (GMT+8)
+      date: getTodayDate(), // 儲存 YYYY-MM-DD (GMT+8)
     }
     logs.value.push(newLog)
 
@@ -51,7 +52,7 @@ export const useDiaryStore = defineStore('diary', () => {
   // 3. Getters
   // 取得「今天」的營養攝取總和
   const todaySummary = computed(() => {
-    const today = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0]
+    const today = getTodayDate()
     
     // 篩選今天的紀錄
     const todayLogs = logs.value.filter(log => log.date === today)

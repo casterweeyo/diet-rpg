@@ -6,6 +6,7 @@ import { analyzeImage, analyzeText } from '../services/gemini'
 import { fetchProductByBarcode } from '../services/barcode'
 import BarcodeScanner from '../components/Diet/BarcodeScanner.vue'
 import { useDiaryStore } from '../stores/diaryStore'
+import { getMealTypeByTime } from '../utils/dateUtils'
 
 const diaryStore = useDiaryStore()
 // 狀態管理
@@ -27,13 +28,6 @@ const showBarcodeScanner = ref(false)
 const fileInputRef = ref(null)
 
 // 用餐時段 (根據目前時間自動預選)
-const getMealTypeByTime = () => {
-  const hour = new Date().getHours()
-  if (hour >= 5 && hour < 11) return 'breakfast'
-  if (hour >= 11 && hour < 17) return 'lunch'
-  if (hour >= 17 && hour < 22) return 'dinner'
-  return 'snack'
-}
 const mealType = ref(getMealTypeByTime())
 
 // 取得當前活躍任務
@@ -157,9 +151,8 @@ const quickAddFood = (name, calories, protein, carbs, fat) => {
     calories,
     protein,
     carbs,
-    fat,
-    mealType: getMealTypeByTime(),
-    timestamp: Date.now()
+    fat, // addLog 會自動處理 id, timestamp 與 date
+    mealType: getMealTypeByTime()
   })
   userStore.addXP(5)
   alert(`已新增 ${name}`)

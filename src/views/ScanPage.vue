@@ -131,9 +131,6 @@ const confirmLog = () => {
     mealType: mealType.value // 加入用餐時段
   })
   
-  // 2. 觸發任務完成 (紀錄第一餐)
-  userStore.completeQuest('scan')
-  
   // 額外獎勵：每次紀錄都給一點基礎 XP (例如 10)，鼓勵多紀錄
   userStore.addXP(10)
   

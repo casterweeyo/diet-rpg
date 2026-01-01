@@ -98,7 +98,9 @@ export const useUserStore = defineStore('user', () => {
       // 剩餘熱量給碳水 (確保不為負數)
       const carbs = Math.max(0, Math.round((targetCalories - occupiedCals) / 4))
 
-      return { calories: targetCalories, protein, fat, carbs }
+      // 重新計算總熱量以確保與營養素加總一致 (避免 P+F > Target 的情況導致 UI 顯示矛盾)
+      const calculatedCalories = (protein * 4) + (fat * 9) + (carbs * 4)
+      return { calories: calculatedCalories, protein, fat, carbs }
     }
 
     // 其他模式 (維持/增肌) 使用比例分配法
@@ -193,7 +195,7 @@ export const useUserStore = defineStore('user', () => {
       // 定義每日任務
       game.value.dailyQuests.items = [
         { id: 'login', title: '登入遊戲', desc: '回來看看你的角色', xp: 10, completed: false },
-        { id: 'scan', title: '紀錄第一餐', desc: '使用 AI 掃描食物', xp: 50, completed: false },
+        { id: 'scan', title: '紀錄第一餐', desc: '紀錄任意飲食', xp: 50, completed: false },
         { id: 'protein', title: '蛋白質達標', desc: '攝取足夠的蛋白質', xp: 100, completed: false },
         { id: 'water', title: '喝水達標', desc: `喝足夠的水 (${waterGoal.value}ml)`, xp: 30, completed: false }
       ]

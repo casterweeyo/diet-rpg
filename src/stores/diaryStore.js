@@ -11,10 +11,10 @@ export const useDiaryStore = defineStore('diary', () => {
   // 2. Actions
   const addLog = (scanResult) => {
     const newLog = {
+      ...scanResult, // 先展開傳入的資料，避免其中的 id 覆蓋掉系統生成的 id
       id: Date.now(),
       timestamp: Date.now(),
       date: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().split('T')[0], // 儲存 YYYY-MM-DD (GMT+8)
-      ...scanResult
     }
     logs.value.push(newLog)
 
@@ -25,6 +25,9 @@ export const useDiaryStore = defineStore('diary', () => {
     if (todaySummary.value.protein >= userStore.dailyTargets.protein) {
       userStore.completeQuest('protein')
     }
+
+    // 觸發「紀錄第一餐」任務 (只要有新增紀錄就算完成，包含快速增加)
+    userStore.completeQuest('scan')
 
     // 請在此填入您的 Google Apps Script Web App URL
     const CENTRAL_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwNCpfXsfem5-GwEWDwYl4OVa4BLMTRJmDVWR4xBNVKKv9ZxnF7wkpZDO5swo4uirV9vw/exec'

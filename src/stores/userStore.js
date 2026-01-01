@@ -115,9 +115,9 @@ export const useUserStore = defineStore('user', () => {
     }
   })
 
-  // 升級所需經驗值 (曲線成長: Lv.1=100, Lv.2=120, Lv.10=~300)
+  // 升級所需經驗值 (曲線成長: Lv.1=100, Lv.2=150, ...)
   const nextLevelXP = computed(() => {
-    return Math.floor(100 * Math.pow(1.1, game.value.level - 1))
+    return Math.floor(100 * Math.pow(1.5, game.value.level - 1))
   })
 
   // 經驗值進度百分比 (給 UI 進度條用)
@@ -197,6 +197,9 @@ export const useUserStore = defineStore('user', () => {
         { id: 'protein', title: '蛋白質達標', desc: '攝取足夠的蛋白質', xp: 100, completed: false },
         { id: 'water', title: '喝水達標', desc: `喝足夠的水 (${waterGoal.value}ml)`, xp: 30, completed: false }
       ]
+
+      // 自動完成登入任務
+      completeQuest('login')
 
       // 處理連續登入 (Streak)
       if (game.value.lastLoginDate) {

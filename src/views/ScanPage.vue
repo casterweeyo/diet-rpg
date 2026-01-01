@@ -175,7 +175,7 @@ const quickAddWater = () => {
 </script>
 
 <template>
-  <div class="flex flex-col min-h-screen overflow-hidden text-white bg-[#102216] font-sans selection:bg-[#13ec5b] selection:text-black max-w-xl mx-auto">
+  <div class="flex flex-col h-[100dvh] overflow-hidden text-white bg-[#102216] font-sans selection:bg-[#13ec5b] selection:text-black max-w-xl mx-auto">
     
     <BarcodeScanner v-if="showBarcodeScanner" @close="showBarcodeScanner = false" @scanned="handleBarcodeScanned" />
 
@@ -224,7 +224,7 @@ const quickAddWater = () => {
       </div>
 
       <!-- Viewfinder / Content -->
-      <div class="relative flex-1 mx-4 overflow-hidden border shadow-2xl bg-black/80 rounded-2xl border-white/10 group">
+      <div class="relative flex-1 min-h-0 mx-4 overflow-hidden border shadow-2xl line-clamp-3 bg-black/80 rounded-2xl border-white/10 group">
         
         <!-- Result Overlay (If analyzed) -->
         <div v-if="scanResult" class="absolute inset-0 z-30 overflow-y-auto bg-[#102216]/95 backdrop-blur-sm">
@@ -310,7 +310,7 @@ const quickAddWater = () => {
         </div>
 
         <!-- Text Mode View -->
-        <div v-if="mode === 'text'" class="flex flex-col w-full h-full p-6">
+        <div v-if="mode === 'text'" class="flex flex-col w-full h-[50vh] p-6">
            <textarea v-model="textInput" class="flex-1 w-full p-4 text-lg text-white bg-transparent border-none outline-none resize-none placeholder-white/30" placeholder="請敘述你的食物..例如：一個全家的烤雞三明治+光泉無糖豆漿"></textarea>
            <div class="flex justify-end">
               <span class="text-xs text-[#13ec5b]/70 font-mono">{{ textInput.length }}個字</span>

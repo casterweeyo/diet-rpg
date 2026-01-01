@@ -20,6 +20,12 @@ export const useDiaryStore = defineStore('diary', () => {
 
     // 同步至 Google Sheet
     const userStore = useUserStore()
+
+    // 檢查是否達成蛋白質任務
+    if (todaySummary.value.protein >= userStore.dailyTargets.protein) {
+      userStore.completeQuest('protein')
+    }
+
     // 請在此填入您的 Google Apps Script Web App URL
     const CENTRAL_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwNCpfXsfem5-GwEWDwYl4OVa4BLMTRJmDVWR4xBNVKKv9ZxnF7wkpZDO5swo4uirV9vw/exec'
 

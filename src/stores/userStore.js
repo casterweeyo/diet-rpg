@@ -198,9 +198,6 @@ export const useUserStore = defineStore('user', () => {
         { id: 'water', title: '喝水達標', desc: `喝足夠的水 (${waterGoal.value}ml)`, xp: 30, completed: false }
       ]
 
-      // 自動完成登入任務
-      completeQuest('login')
-
       // 處理連續登入 (Streak)
       if (game.value.lastLoginDate) {
         const lastDate = new Date(game.value.lastLoginDate)
@@ -215,6 +212,9 @@ export const useUserStore = defineStore('user', () => {
       
       game.value.lastLoginDate = today
     }
+
+    // 每次檢查時都嘗試完成登入任務 (確保即使同一天重新整理也能觸發)
+    completeQuest('login')
   }
 
   // 完成任務
